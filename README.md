@@ -1,4 +1,4 @@
-# NISP
+# NISPM
 
 *Scheme dialect livecoding tracker for norns*
 

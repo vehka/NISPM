@@ -1,5 +1,5 @@
 ---
---- nisp core functions
+--- nispm core functions
 --- @its_your_bedtime
 ---
 

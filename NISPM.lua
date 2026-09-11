@@ -1,4 +1,4 @@
--- NISP
+-- NISPM
 --
 --
 -- scheme dialect livecoding

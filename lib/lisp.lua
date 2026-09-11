@@ -83,7 +83,7 @@ lisp.init = function()
     for k,v in pairs(stdlib) do lisp.std[k] = v lisp.help = lisp.help ..' '.. k  end -- functions
     for k = 1, 99 do lisp.pat[k] = {} end
 
-    lisp:log('welcome to nisp')
+    lisp:log('welcome to nispm')
 end
 
 ----------
