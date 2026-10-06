@@ -1,12 +1,15 @@
 -- NISPM
 --
---
 -- scheme dialect livecoding
 --         tracker for norns
 --
---
+-- Original script:
 -- @its_your_bedtime
 --
+-- Improvements:
+-- @vehka
+--
+
 local keyboard = require 'core/keyboard'
 local lisp = include("lib/lisp")
 local default = include("lib/default")
