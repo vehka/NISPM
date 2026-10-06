@@ -54,10 +54,8 @@ utils.log = function(self, st)
   local s = tostring(str):gsub("^%s*(.-)%s*$", "%1")
   if string.len(s) == 0  then return false
   elseif string.len(s) > 33 then
-      local b = string.sub(str, 31)
-      self.output[#self.output] =  s
-      self.output[#self.output + 1] = b
-      if string.len(b) > 33 then utils.log(self, string.sub(b, 31)) end
+      self.output[#self.output + 1] = string.sub(s, 1, 30)
+      utils.log(self, string.sub(s, 31))
     else
       if s ~= self.output[#self.output] then
           self.output[#self.output + 1] =  s

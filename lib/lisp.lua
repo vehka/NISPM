@@ -101,15 +101,19 @@ lisp.Env = function (pars, args, outer)
    return dict
 end
 
-lisp.collect = function(t,s,e)
-   local args = {}
+-- Evaluate t[s..]. With keep, false and nil results hold their place
+-- (function arguments); otherwise they are dropped (plain lists).
+-- Returns the values and their count.
+lisp.collect = function(t,s,e,keep)
+   local args, n = {}, 0
    for i = s, #t do
       local v = lisp.eval(t[i], e )
-      if v then
-        args[#args + 1] = v
+      if v or keep then
+        n = n + 1
+        args[n] = v
       end
    end
-   return args
+   return args, n
 end
 
 -- Expression evaluation
@@ -129,14 +133,12 @@ lisp.eval = function (x, env)
          return lisp.core[x[1]](lisp, x, env)
       elseif env:_find_(x[1]) then
             local proc = lisp.eval(x[1], env)
-            if type(proc) == 'function' then
-               local args = lisp.collect(x, 2, env)
-               return proc(table.unpack(args)) or nil
-            else
-               local args = lisp.collect(x, 2, env)
-               return proc(table.unpack(args)) or nil
-            end
+            local args, n = lisp.collect(x, 2, env, true)
+            return proc(table.unpack(args, 1, n)) or nil
 
+    elseif type(x[1]) == 'string' and not tonumber(x[1])
+      and not string.find(x[1], '".*"') then
+           lisp.err('Undefined function: ' .. x[1])
     else
            local args = lisp.collect(x, 1, env)
            return args
@@ -198,11 +200,21 @@ lisp.parse = function (s)
 end
 
 
+local last_err
 lisp.run = function(str, verbose, tr, pos)
    lisp.tr_now = tr
    lisp.pos_now = pos
-   if verbose then lisp:log('>'..str) end
-   local res = (#str > 0) and lisp.eval(lisp.parse(str)) or nil
+   if verbose then lisp:log('>'..str) last_err = nil end
+   -- an error must not escape: it would stop the sequencer
+   local ok, res = pcall(function()
+      return (#str > 0) and lisp.eval(lisp.parse(str)) or nil
+   end)
+   if not ok then
+      local msg = 'error: ' .. tostring(res):gsub('^.-:%d+: ', '')
+      -- a failing cell repeats on every step, log it once
+      if msg ~= last_err then lisp:log(msg) last_err = msg end
+      return nil
+   end
    if res then lisp:log(res) end
    if not verbose then return res end
 end
@@ -210,13 +222,11 @@ end
 -- Evaluate the init cell (definitions saved with the project)
 lisp.run_init = function()
    if not lisp.init_cell then return end
-   local ok, err = pcall(tracker.evaluate, lisp, lisp.init_cell, 1, 1)
-   if not ok then lisp:log('init: ' .. tostring(err)) end
+   tracker.evaluate(lisp, lisp.init_cell, 1, 1)
 end
 
 lisp.err = function(msg)
-   lisp:log(msg)
-   error(msg)
+   error(msg, 0)
 end
 
 lisp.redraw = function()

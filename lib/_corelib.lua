@@ -37,16 +37,17 @@ local core = {
    ------
    ------
    ['if'] =  function( self, x, env )
+    -- anything but false and nil counts as true
     local exp = self.eval(x[2], env)
-      if exp == true then return self.eval(x[3], env)
-      elseif exp == false or exp == nil then
+      if exp then return self.eval(x[3], env)
+      else
          return self.eval(x[4], env ) 
       end
     end,
  
     ['when'] =  function( self, x, env )
       local exp = self.eval(x[2], env)
-        if exp == true then return self.eval(x[3], env)
+        if exp then return self.eval(x[3], env)
         end
       end,
    

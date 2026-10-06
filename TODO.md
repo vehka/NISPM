@@ -2,20 +2,12 @@
 
 ## Bugs
 
-- An error in one cell stops the whole sequencer: the step function aborts
-  before the position advances, so every later step fails the same way
-  (seen with an undefined symbol in `(> cut 5000)`). Wrap cell evaluation
-  in `pcall` and log the error.
 - `+ New` runs `init()` again, which adds every param a second time (param
   ID collisions; norns warns this will become a load failure).
-- Unknown function names are silent: `(nosuch 1)` returns `(1)`.
-- `if` and `when` only accept an exact `true`: `(if 1 a b)` returns nil.
 - `(note x)` with one argument only takes numbers 0 - 99, and values below
   10 are stored but never played.
 - `sample` and `note` have no clear form; `(sample 15 (#f))` is the only
   way to empty a step.
-- `collect` drops arguments that evaluate to false or nil, which shifts the
-  remaining arguments.
 - `(@ track)` ignores its argument (README says it is optional track).
 - `append` is an empty stub.
 - README lists `strtch`, the code has `strch`.
