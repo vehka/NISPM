@@ -53,6 +53,8 @@ local core = {
    
    ['jmp'] = function( self, x, env )
           local l =  util.clamp(self.eval(x[2], env) or 1 - 1, 0, self.length)
+          -- a jump back starts a new cycle
+          if l < self.subpos[self.tr_now] then self.cycle[self.tr_now] = self.cycle[self.tr_now] + 1 end
           self.subpos[self.tr_now] = l or 0
    end,
    

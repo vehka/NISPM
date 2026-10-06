@@ -71,8 +71,10 @@ tracker.exec = function(self)
 
       if self.pos % (self.div[i] > 0 and self.div[i] or 1)  == 0 then
 
-        self.cycle[i] = self.pos >= self.length and self.cycle[i] + 1 or self.cycle[i]
-        self.subpos[i] = self.subpos[i] >= self.length and 1 or self.subpos[i] + 1
+        -- a new cycle starts when the track wraps to step 1
+        local wrap = self.subpos[i] >= self.length
+        self.cycle[i] = wrap and self.cycle[i] + 1 or self.cycle[i]
+        self.subpos[i] = wrap and 1 or self.subpos[i] + 1
 
           local tr    =  tr_i[i]
           local step  =  self.subpos[i]

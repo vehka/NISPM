@@ -16,7 +16,7 @@ local lisp = {
    core = include('lib/_corelib'), std = nil, log = utils.log,
    buf = {}, blink = false, bpm =  110, live = false,
    tracker = true, pat = {[0] = {}}, help = '',
-   pos = 1, subpos = { 1, 1, 1, 1 }, length = 16,
+   pos = 1, subpos = { 0, 0, 0, 0 }, length = 16,
    mute ={ false, false, false, false },
    cycle = { 1, 1, 1, 1 }, div = { 1, 1, 1, 1 },
    tr_now = 1, pos_now = 1, vel_now = 1, init_cell = nil,
