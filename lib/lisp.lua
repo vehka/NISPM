@@ -85,6 +85,7 @@ lisp.init = function()
     for k,_ in pairs(lisp.core) do lisp.help = lisp.help ..' '.. k end
     for k,v in pairs(stdlib) do lisp.std[k] = v lisp.help = lisp.help ..' '.. k  end -- functions
     for k = 1, 99 do lisp.pat[k] = {} end
+    lisp.init_cell = nil
 
     lisp:log('welcome to nispm')
 end

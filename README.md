@@ -5,6 +5,8 @@
 **Work in progress. Everything is subject to change**
 
 
+The script starts with a small techno project as an example: the pattern cells and the init cell (`ctrl + i`) show the lisp functions in use. Its drums are the 909 / 808 kits that ship with norns (`dust/audio/common`). Use `+ New` in the params menu for an empty project.
+
 ### Controls
 
 **`~`**|`open / close repl`

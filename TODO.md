@@ -6,6 +6,8 @@
   before the position advances, so every later step fails the same way
   (seen with an undefined symbol in `(> cut 5000)`). Wrap cell evaluation
   in `pcall` and log the error.
+- `+ New` runs `init()` again, which adds every param a second time (param
+  ID collisions; norns warns this will become a load failure).
 - Unknown function names are silent: `(nosuch 1)` returns `(1)`.
 - `if` and `when` only accept an exact `true`: `(if 1 a b)` returns nil.
 - `(note x)` with one argument only takes numbers 0 - 99, and values below

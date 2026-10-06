@@ -9,6 +9,7 @@
 --
 local keyboard = require 'core/keyboard'
 local lisp = include("lib/lisp")
+local default = include("lib/default")
 local keycodes = include("lib/keycodes")
 local fileselect = require('fileselect')
 local textentry = require('textentry')
@@ -18,6 +19,7 @@ local live = true
 local shift = false
 local ctrl = false
 local metro_main
+local started = false
 
 function load_project(pth)
   if string.find(pth, '.seq') ~= nil then
@@ -96,6 +98,8 @@ function init()
     params:add_separator()
 
     lisp.init()
+    -- the default project loads once; "+ New" gives an empty one
+    if not started then default.load(lisp) started = true end
     local metro_redraw = metro.init( function() redraw() end, 1 / 30)
     metro_redraw:start()
 
