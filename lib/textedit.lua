@@ -3,80 +3,112 @@
 -- @its_your_bedtime
 --
 
+local COLS, ROWS = 32, 7
+
+-- a cell is stored as plain text; it is word-wrapped only for display
 local textedit = {
-    lines = {{},{},{},{},{},{}, {}},
-    pos = {x = 1, y = 1},
+    chars = {},   -- the text being edited, one character per entry
+    cur = 0,      -- number of characters before the cursor
+    top = 1,      -- first visible row
     running = false,
     evaluated = false,
 }
 
-textedit.open = function(self, t)
-  self.lines = t or {{},{},{},{},{},{},{}}
+-- Text of a cell. Cells saved by older versions are tables of lines.
+textedit.text = function(cell)
+  if type(cell) ~= 'table' then return cell or '' end
+  local s = ''
+  for i = 1, #cell do
+    local l = table.concat(cell[i])
+    -- keep a line break where it can't split a word
+    if #l > 0 and #s > 0 and #cell[i - 1] < COLS and s:sub(-1) == ')' and l:sub(1, 1) == '(' then
+      s = s .. '\n'
+    end
+    s = s .. l
+  end
+  return s
+end
+
+-- Rows as {first, last} character indices: break at newlines, else after
+-- the last space that fits, else in the middle of a word.
+local function layout(chars)
+  local rows, s, space = {}, 1, nil
+  for i = 1, #chars do
+    local c = chars[i]
+    if c == '\n' then
+      rows[#rows + 1] = {s, i - 1}
+      s, space = i + 1, nil
+    else
+      if i - s + 1 > COLS and c ~= ' ' then
+        local e = space or i - 1
+        rows[#rows + 1] = {s, e}
+        s, space = e + 1, nil
+      end
+      if c == ' ' then space = i end
+    end
+  end
+  rows[#rows + 1] = {s, #chars}
+  return rows
+end
+
+-- Row and column of the cursor. At a wrap the cursor belongs to the next row.
+local function locate(rows, cur)
+  for r = #rows, 1, -1 do
+    if cur >= rows[r][1] - 1 and cur <= rows[r][2] then return r, cur - rows[r][1] + 1 end
+  end
+  return 1, 0
+end
+
+textedit.open = function(self, cell)
+  self.chars = {}
+  for c in textedit.text(cell):gmatch(utf8.charpattern) do self.chars[#self.chars + 1] = c end
+  self.cur, self.top = #self.chars, 1
 end
 
 textedit.store = function(self)
-  return self.lines
+  local s = table.concat(self.chars)
+  return s:match('%S') and s or nil
 end
 
-textedit.buildword = function(self, keyinput)
-    if keyinput ~= nil then
-        if self.pos.x ~= 1 then
-            table.insert(self.lines[self.pos.y] , (#self.lines[self.pos.y] + self.pos.x) , keyinput)
-            if #self.lines[self.pos.y] > 32 then
-              local l = self.lines[self.pos.y][#self.lines[self.pos.y]]
-              table.remove(self.lines[self.pos.y], #self.lines[self.pos.y])
-              table.insert(self.lines[self.pos.y + 1], 1, l)
-            end
-        else
-            table.insert(self.lines[self.pos.y], keyinput)
-        end
-        if #self.lines[self.pos.y] > 32 then
-          self.pos.y = util.clamp(self.pos.y + 1, 1, 7)
-          self.pos.x = 1
-        end
-    end
+textedit.insert = function(self, c)
+  table.insert(self.chars, self.cur + 1, c)
+  self.cur = self.cur + 1
 end
 
-textedit.rm = function(self, back)
-    if back then
-        if (#self.lines[self.pos.y] + self.pos.x) <= #self.lines[self.pos.y] then
-            table.remove(self.lines[self.pos.y],  util.clamp((#self.lines[self.pos.y] + self.pos.x), 0, #self.lines[self.pos.y]))
-            self.pos.x = self.pos.x + 1
-        end
-    else
-        if (#self.lines[self.pos.y] + self.pos.x) > 1 then
-            table.remove(self.lines[self.pos.y],  util.clamp((#self.lines[self.pos.y] + self.pos.x) - 1, 0, #self.lines[self.pos.y]))
-        end
-        if #self.lines[self.pos.y] + self.pos.x == 1 then
-            self.pos.y = util.clamp(self.pos.y - 1, 1, #self.lines)
-        end
-    end
+textedit.vertical = function(self, d)
+  local rows = layout(self.chars)
+  local r, col = locate(rows, self.cur)
+  local row = rows[r + d]
+  if not row then return end
+  local last = row[2]
+  -- stay on the row when its end is a wrap
+  if rows[r + d + 1] and rows[r + d + 1][1] == last + 1 then last = last - 1 end
+  self.cur = math.max(row[1] - 1, math.min(row[1] - 1 + col, last))
 end
 
 textedit.kb_code = function(self, c, val)
   if keyboard.state.UP then
-    self.pos.y = util.clamp(self.pos.y - 1, 1, #self.lines)
+    self:vertical(-1)
   elseif keyboard.state.LEFT then
-      self.pos.x = util.clamp(self.pos.x - 1, (-#self.lines[self.pos.y] + 1) , 1)
+    self.cur = util.clamp(self.cur - 1, 0, #self.chars)
   elseif keyboard.state.RIGHT then
-      self.pos.x = util.clamp(self.pos.x + 1, (-#self.lines[self.pos.y] + 1), 1)
+    self.cur = util.clamp(self.cur + 1, 0, #self.chars)
   elseif keyboard.state.DOWN then
-      self.pos.y = util.clamp(self.pos.y + 1, 1, #self.lines)
+    self:vertical(1)
   elseif keyboard.state.BACKSPACE then
-      self:rm(false)
+    if self.cur > 0 then
+      table.remove(self.chars, self.cur)
+      self.cur = self.cur - 1
+    end
   elseif keyboard.state.DELETE then
-      self:rm(true)
+    if self.cur < #self.chars then table.remove(self.chars, self.cur + 1) end
   elseif keyboard.state.ENTER then
-      if not keyboard.shift() then
-          self.pos.y = util.clamp(self.pos.y + 1, 1, 7)
-      end
+    if not keyboard.shift() then self:insert('\n') end
   end
-  if #self.lines[self.pos.y] < 1 then self.pos.x = 1 end
 end
 
-
 textedit.kb_char = function(self, k)
-    self:buildword(k)
+  if k ~= nil then self:insert(k) end
 end
 
 textedit.render = function(blink, run, output)
@@ -96,10 +128,16 @@ textedit.render = function(blink, run, output)
 
     screen.level(15)
 
-    for i = 1, #textedit.lines do
+    -- scroll with the cursor
+    local rows = layout(textedit.chars)
+    local r, col = locate(rows, textedit.cur)
+    textedit.top = util.clamp(textedit.top, math.max(1, r - ROWS + 1), r)
+
+    for i = 1, ROWS do
+        local row = rows[i + textedit.top - 1]
+        if not row then break end
         screen.move(0, 8 * i)
-        local l = table.concat(textedit.lines[i])
-        screen.text(tostring(l))
+        screen.text(table.concat(textedit.chars, '', row[1], row[2]))
         screen.stroke()
     end
 
@@ -110,7 +148,7 @@ textedit.render = function(blink, run, output)
 
     if blink then
         screen.level(2)
-        screen.rect((((#textedit.lines[textedit.pos.y] + textedit.pos.x) * 8) / 2) - 4, (textedit.pos.y * 8) - 6, 3, 7)
+        screen.rect(math.min(col, COLS - 1) * 4, ((r - textedit.top + 1) * 8) - 6, 3, 7)
         screen.fill()
     end
 end

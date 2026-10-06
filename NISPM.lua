@@ -26,6 +26,8 @@ function load_project(pth)
       print("data found")
       for k,v in pairs(saved[2]) do lisp[k] = v end
       lisp.metro:bpm_change(saved[2].bpm)
+      lisp.init_cell = saved[2].init_cell
+      lisp.run_init()
       if saved[1] then params:read(norns.state.data .. saved[1] .. ".pset") end
     else
       print("no data")
@@ -35,7 +37,7 @@ end
 
 function save_project(txt)
   if txt then
-    local data = { pat = lisp.pat, bpm = lisp.bpm, div = lisp.div, length = lisp.length, mute = lisp.mute }
+    local data = { pat = lisp.pat, bpm = lisp.bpm, div = lisp.div, length = lisp.length, mute = lisp.mute, init_cell = lisp.init_cell }
     tab.save({ txt, data }, norns.state.data .. txt ..".seq")
     params:write( norns.state.data .. txt .. ".pset")
   else

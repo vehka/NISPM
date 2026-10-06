@@ -23,6 +23,11 @@ local core = {
    ['help'] = function( self ) return self.help end,
    ['quote'] = function( self, x, env ) return x[2] end,
    ['def'] =  function( self, x, env ) env[x[2]] = self.eval(x[3], env) end,
+   ['set!'] = function( self, x, env )
+      local scope = env:_find_(x[2])
+      if scope then scope[x[2]] = self.eval(x[3], env)
+      else self:log('Undefined: ' .. tostring(x[2])) end
+   end,
    ['lambda'] =  function( self, x, env ) return self.Proc(x[2], x[3], env) end,
    ['@'] = function( self, x, env ) return self.pos_now end,
    ['bpm'] = function( self, x, env ) self.bpm = self.eval(x[2], env) self.metro:bpm_change(self.bpm) end,
@@ -86,7 +91,7 @@ local core = {
 
 
    ['save'] = function( self, x, env )
-        local data = { pat = self.pat, bpm = self.bpm, div = self.div, length = self.length, mute = self.mute }
+        local data = { pat = self.pat, bpm = self.bpm, div = self.div, length = self.length, mute = self.mute, init_cell = self.init_cell }
         tab.save( { nil , data }, norns.state.data .. tostring(self.eval(x[2], env)) ..".seq") 
     end,
 
@@ -94,6 +99,8 @@ local core = {
         local saved = tab.load(norns.state.data .. tostring(self.eval(x[2], env))  .. ".seq")
         if saved ~= nil then for k,v in pairs(saved[2]) do self[k] = v end end
         self.metro:bpm_change(saved[2].bpm)
+        self.init_cell = saved[2].init_cell
+        self.run_init()
     end,
     
  --------------------------------
@@ -118,6 +125,10 @@ local core = {
     end
  end,
    
+
+['vel'] = function( self, x, env )
+  self.vel_now = util.clamp(tonumber(self.eval(x[2], env)) or 1, 0, 1)
+end,
 
 ['pos'] = function( self, x, env )
   local s_id = tonumber(self.pat[self.pos_now][self.tr_now * 3 - 2]) or false

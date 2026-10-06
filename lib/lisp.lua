@@ -19,7 +19,7 @@ local lisp = {
    pos = 1, subpos = { 1, 1, 1, 1 }, length = 16,
    mute ={ false, false, false, false },
    cycle = { 1, 1, 1, 1 }, div = { 1, 1, 1, 1 },
-   tr_now = 1, pos_now = 1,
+   tr_now = 1, pos_now = 1, vel_now = 1, init_cell = nil,
 }
 
 local is_mute_shortcut = false
@@ -27,9 +27,9 @@ function lisp.kb_code(c, val)
   is_mute_shortcut = false
   if lisp.live then repl:kb()
   elseif lisp.tracker then
-    tracker.kb_code(c, val, lisp.pat, lisp.length)
+    tracker.kb_code(c, val, lisp.pat, lisp.length, lisp)
     local code = utils.tab_key(keyboard.codes, c)
-    if val > 0 and keyboard.shift() and (code <= 5 and code >= 2) then
+    if val > 0 and keyboard.shift() and (code <= 5 and code >= 2) and not tracker.edit then
       is_mute_shortcut = true
       lisp.mute[code - 1] = not lisp.mute[code - 1]
     end
@@ -49,9 +49,12 @@ end
 function lisp.kb_char(k)
   if lisp.live then repl:buildword(k)
   elseif lisp.tracker then
-    tracker.kb_char(k)
-    if keyboard.ctrl() then
-      if k == 'x' then
+    if tracker.edit then
+      tracker.kb_char(k)
+    elseif keyboard.ctrl() then
+      if k == 'i' then
+        tracker.open_init(lisp)
+      elseif k == 'x' then
         tracker:copy(lisp.pat[tracker.pos.y][tracker.pos.x])
         lisp.pat[tracker.pos.y][tracker.pos.x] = nil
       elseif k == 'c' then
@@ -201,6 +204,13 @@ lisp.run = function(str, verbose, tr, pos)
    local res = (#str > 0) and lisp.eval(lisp.parse(str)) or nil
    if res then lisp:log(res) end
    if not verbose then return res end
+end
+
+-- Evaluate the init cell (definitions saved with the project)
+lisp.run_init = function()
+   if not lisp.init_cell then return end
+   local ok, err = pcall(tracker.evaluate, lisp, lisp.init_cell, 1, 1)
+   if not ok then lisp:log('init: ' .. tostring(err)) end
 end
 
 lisp.err = function(msg)

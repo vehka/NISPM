@@ -13,11 +13,11 @@ stdlib['#f'] = function () return false end
 --- math
 stdlib['+'] = function(...) local r = 0 for i=1,select("#",...) do r = r + select(i,...) end return r end
 
-stdlib['-'] = function(...) local r = 0 for i=1,select("#",...) do r = r - select(i,...) end return r end
+stdlib['-'] = function(a, ...) if select("#",...) == 0 then return -a end for i=1,select("#",...) do a = a - select(i,...) end return a end
 
 stdlib['*'] = function(...) local r = 1 for i=1,select("#",...) do r = r * select(i,...) end return r end
 
-stdlib['/'] = function(...) local r = 1 for i=1,select("#",...) do r = r / select(i,...) end return r end
+stdlib['/'] = function(a, ...) if select("#",...) == 0 then return 1 / a end for i=1,select("#",...) do a = a / select(i,...) end return a end
 
 stdlib['%'] = function(...) local r for i=1,(select("#",...) - 1) do r = select(i,...) % select(i + 1,...) end return r end
 

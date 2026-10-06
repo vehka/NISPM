@@ -9,14 +9,14 @@ local textedit = include('lib/textedit')
 local utils = include('lib/utils')
 ---
 local tr_i = { {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12} }
-local tracker = { pos = { x = 1, y = 1}, edit = false,  buffer = { nil,  nil }, }
+local tracker = { pos = { x = 1, y = 1}, edit = false, edit_init = false, buffer = { nil,  nil }, }
 local bars = { [1] = { 11, 28, 31 }, [2] = { 39, 31, 61 }, [3] = { 69, 31, 91 }, [4] = { 99, 30, 121 } }
 local s_offset, bounds_y, w, attached = 0, 9, {}, false
 ---
 local function tr_spacing(tr) return (30 * tr) - 17 end
 local function cursor_pos(x, y) return (y == tracker.pos.y and tracker.pos.x == x) and 9 or 1 end
 local function format_val(v) return (v and string.len(v) < 2) and v .. '-' or v and v or '--' end
-local function not_empty(t) for i=1,#t do if #t[i] > 0 then return true end end end
+local function not_empty(cell) return textedit.text(cell):match('%S') ~= nil end
 
 local function get_note(n)
   if n and string.match(n, '%a%d') then
@@ -57,12 +57,7 @@ tracker.buildword = function(self, keyinput, pat)
 end
 
 tracker.evaluate = function(self, s, tr, pos)
-    local f = '('
-    for i = 1, #s do
-        local l = table.concat(s[i])
-        f = f .. tostring(l)
-    end
-    f = f .. ')'
+    local f = '(' .. textedit.text(s) .. '\n)'
     local l = self.run(f, false, tr, pos)
     return l or false
 end
@@ -85,10 +80,11 @@ tracker.exec = function(self)
           local n     =  get_note(pat[step][tr[2]])
           local e, l  =  pat[step][tr[3]]
 
+          self.vel_now = 1
           if e then l = tracker.evaluate(self, e, i, step )  end
 
               if not self.mute[i] and s then
-                  engine.noteOn(s, music.note_num_to_freq(n or 60), 1, s)
+                  engine.noteOn(s, music.note_num_to_freq(n or 60), self.vel_now, s)
               end
           end
       end
@@ -106,12 +102,23 @@ tracker.exec = function(self)
 
 end
 
-tracker.kb_code = function(c, val, pat, length)
+-- the init cell holds definitions; it is saved with the project and run on load
+tracker.open_init = function(self)
+    textedit:open(self.init_cell)
+    tracker.edit, tracker.edit_init = true, true
+end
+
+tracker.kb_code = function(c, val, pat, length, self)
     if tracker.edit then
-        if keyboard.state.ESC then tracker.edit = false end
+        if keyboard.state.ESC then tracker.edit, tracker.edit_init = false, false end
         if keyboard.state.ENTER and keyboard.shift() then
           textedit.evaluated = true
-          pat[tracker.pos.y][tracker.pos.x] = textedit:store()
+          if tracker.edit_init then
+            self.init_cell = textedit:store()
+            self.run_init()
+          else
+            pat[tracker.pos.y][tracker.pos.x] = textedit:store()
+          end
         end
         textedit:kb_code(c, val)
     else
@@ -199,7 +206,7 @@ tracker.render = function(self)
 
               screen.level(cursor_pos(tr[3], l))
               screen.move(tr_spacing(k) + 20, i  * 7)
-              screen.text(not_empty(expr or {}) and '*'  or '-')
+              screen.text(not_empty(expr) and '*'  or '-')
           end
           screen.stroke()
         end

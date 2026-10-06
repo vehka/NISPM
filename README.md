@@ -17,9 +17,11 @@
 
 **`enter`**|`open text editor (third column of track must be selected)`
 
-**`esc`**|`close text editor`
+**`esc`**|`close text editor without saving`
 
 **`shift + enter`**|`save expression in cell (while in text edit mode)`
+
+**`ctrl + i`**|`open init cell: definitions saved with the project, run on load and on shift + enter`
 
 **`ctrl + c / v`**|`copy / paste`
 
@@ -35,6 +37,7 @@
 | function     |       arguments         |  description                                                
 |:-------------|:------------------------|:-----------------------------------------------------------
 | `(def)`      | `symbol, value`         | define a symbol                                             |
+| `(set!)`     | `symbol, value`         | change an already defined symbol, also from inside a lambda |
 | `(lambda)`   | `args, function`        | anonymous function                                          |
 | `(quote)` `'`| `expr`                  | returns unevaluated expression                              |
 | `(if)`       | `cond, expr 1, expr 2`  | evaluate expr 1 if cond is true, else evaluates expr 2      |  
@@ -52,6 +55,7 @@
 | `(load)`     | `id`                    | load pattern                                                |          
 | `(note)`     | `value`                 | write note at current position                              |
 | `(sample)`   | `value`                 | write sample at current position                            |
+| `(vel)`      | `value`                 | set velocity (0 - 1) of the note at current position        |
 | `(pos)`      | `value`                 | set position of current sample                              |
 | `(param)`    | `value`                 | set current sample [param](#extras)                         |
 | `(help)`     |   -                     | display help                                                |
@@ -129,7 +133,3 @@
 
 <br>
 
-
-###### <sup>Known bugs-features:
-
-<sup>copy-pasted expression cells are linked, so editing one would affect all others.
